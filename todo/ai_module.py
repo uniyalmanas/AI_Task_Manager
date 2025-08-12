@@ -14,7 +14,7 @@ def analyze_context_with_gemini(context_entries, tasks):
     if not gemini_api_key:
         return {"error": "Gemini API key not configured."}
 
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
     # Prepare the prompt for the Gemini model
     context_text = "\n".join([f"Source: {c.source_type}, Content: {c.content}" for c in context_entries])

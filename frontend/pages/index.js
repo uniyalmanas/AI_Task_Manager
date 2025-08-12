@@ -233,6 +233,7 @@ export default function Home() {
   }, [updateTask, setEditingTask, loadTasks, setError]);
 
   return (
+
     <Layout>
       <Head>
         <title>Smart To-Do List</title>
@@ -376,5 +377,7 @@ export default function Home() {
       </div>
       {editingTask && <EditTaskModal task={editingTask} onClose={() => setEditingTask(null)} onSave={handleUpdateTask} aiSuggestions={aiSuggestions} categories={categories} />}
     </Layout>
+
+    
   )
 }

@@ -84,3 +84,28 @@ export const fetchContexts = async () => {
     }
     return response.json();
 };
+
+export const updateContext = async (id, context) => {
+    const response = await fetch(`${API_URL}/contexts/${id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(context),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to update context');
+    }
+    return response.json();
+};
+
+export const deleteContext = async (id) => {
+    const response = await fetch(`${API_URL}/contexts/${id}/`, {
+        method: 'DELETE',
+    });
+    if (response.status === 204) {
+        return null; // No content for successful delete
+    }
+    if (!response.ok) {
+        throw new Error('Failed to delete context');
+    }
+    return response.json();
+};
