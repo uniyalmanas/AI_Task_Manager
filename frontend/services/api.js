@@ -68,3 +68,19 @@ export const deleteTask = async (id) => {
     }
     return response.json();
 };
+
+export const fetchCategories = async () => {
+    const response = await fetch(`${API_URL}/categories/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+    }
+    return response.json();
+};
+
+export const fetchContexts = async () => {
+    const response = await fetch(`${API_URL}/contexts/`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch contexts');
+    }
+    return response.json();
+};

@@ -7,23 +7,27 @@ This project was built as a technical assignment.
 
 ## Features
 
-- **Task Management:** Create, view, and manage your to-do list.
+- **Task Management:** Create, view, and manage your to-do list, now with priority filtering.
 - **AI-Powered Suggestions:** Get intelligent recommendations for task priority, deadlines, categories, and descriptions.
-- **Context Analysis:** The AI analyzes your daily notes and messages to understand your priorities.
+- **Context Analysis:** The AI analyzes your daily notes and messages to understand your priorities. A dedicated page for adding and viewing context has been implemented.
 - **REST API:** A Django REST Framework backend provides a full-featured API.
 - **Modern Frontend:** A responsive user interface built with Next.js and Tailwind CSS.
 
 ## Screenshots
 
-*Please add screenshots of the application UI here.*
+*Please add screenshots of the application UI here. Examples include:*
 
 **Task List Page:**
 
-`[Screenshot of the main task list page with AI suggestions]`
+`[Screenshot of the main task list page with AI suggestions and priority/status/category filters]`
 
 **Context Input Page:**
 
-`[Screenshot of the page where users can add daily context]`
+`[Screenshot of the page where users can add daily context and view context history]`
+
+**Edit Task Modal:**
+
+`[Screenshot of the edit task modal showing AI suggestions]`
 
 ## Tech Stack
 
