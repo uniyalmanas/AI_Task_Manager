@@ -2,18 +2,50 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { fetchTasks, addTask, getAiSuggestions, updateTask, deleteTask } from '../services/api'
+import { fetchTasks, addTask, getAiSuggestions, updateTask, deleteTask, fetchCategories } from '../services/api'
 
 // Edit Task Modal Component
-const EditTaskModal = ({ task, onClose, onSave }) => {
+const EditTaskModal = ({ task, onClose, onSave, aiSuggestions, categories }) => {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [status, setStatus] = useState(task.status);
+  const [priority, setPriority] = useState(task.priority || '');
+  const [deadline, setDeadline] = useState(task.deadline || '');
+  const [category, setCategory] = useState(task.category ? task.category.id : '');
+
+  const currentAISuggestion = aiSuggestions[task.title] || {};
 
   const handleSave = async (e) => {
     e.preventDefault();
-    // We only pass the fields that can be edited
-    onSave(task.id, { ...task, title, description, status });
+
+    const updatedData = {
+      title,
+      description,
+      status,
+      priority_score: priority === '' ? null : parseFloat(priority),
+      deadline: deadline === '' ? null : deadline,
+    };
+
+    // Only include category_id if a category is selected (i.e., category is not an empty string)
+    if (category !== '') {
+      updatedData.category_id = category;
+    }
+
+    onSave(task.id, { ...task, ...updatedData });
+  };
+
+  const applyAISuggestion = (field, value) => {
+    if (field === 'priority') setPriority(value);
+    if (field === 'deadline') setDeadline(value);
+    if (field === 'category') {
+      const suggestedCategoryObj = categories.find(cat => cat.name.toLowerCase() === value.toLowerCase());
+      if (suggestedCategoryObj) {
+        setCategory(suggestedCategoryObj.id);
+      } else {
+        setCategory(''); // Set to empty if suggested category not found
+      }
+    }
+    if (field === 'description') setDescription(value);
   };
 
   return (
@@ -42,7 +74,47 @@ const EditTaskModal = ({ task, onClose, onSave }) => {
             <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
-          <div className="flex justify-end gap-4">
+          <select 
+            className="border p-2 rounded w-full mb-4"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Select Category</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          
+          {/* AI Suggestions in Edit Modal */}
+          {currentAISuggestion.priority_score && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+              <h4 className="font-semibold text-sm mb-2 text-blue-800">AI Suggestions for this Task:</h4>
+              {currentAISuggestion.priority_score && (
+                <p className="text-sm"><strong>Priority:</strong> {currentAISuggestion.priority_score.toFixed(2)}
+                  <button type="button" onClick={() => applyAISuggestion('priority', currentAISuggestion.priority_score.toFixed(2))} className="ml-2 text-blue-600 hover:underline">Apply</button>
+                </p>
+              )}
+              {currentAISuggestion.suggested_deadline && (
+                <p className="text-sm"><strong>Deadline:</strong> {currentAISuggestion.suggested_deadline}
+                  <button type="button" onClick={() => applyAISuggestion('deadline', currentAISuggestion.suggested_deadline)} className="ml-2 text-blue-600 hover:underline">Apply</button>
+                </p>
+              )}
+              {currentAISuggestion.suggested_category && (
+                <p className="text-sm"><strong>Category:</strong> {currentAISuggestion.suggested_category}
+                  <button type="button" onClick={() => applyAISuggestion('category', currentAISuggestion.suggested_category)} className="ml-2 text-blue-600 hover:underline">Apply</button>
+                </p>
+              )}
+              {currentAISuggestion.enhanced_description && (
+                <p className="text-sm"><strong>Enhanced Description:</strong> {currentAISuggestion.enhanced_description}
+                  <button type="button" onClick={() => applyAISuggestion('description', currentAISuggestion.enhanced_description)} className="ml-2 text-blue-600 hover:underline">Apply</button>
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-4 mt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
             <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Save Changes</button>
           </div>
@@ -63,6 +135,9 @@ export default function Home() {
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState("")
   const [editingTask, setEditingTask] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [categories, setCategories] = useState([]);
 
   const loadTasks = useCallback(async () => {
     setLoading(true)
@@ -76,8 +151,18 @@ export default function Home() {
     }
   }, [setLoading, fetchTasks, setTasks, setError])
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await fetchCategories();
+      setCategories(data);
+    } catch (err) {
+      setError('Could not load categories.');
+    }
+  }, [fetchCategories, setCategories, setError]);
+
   useEffect(() => {
     loadTasks()
+    loadCategories()
   }, [])
 
   const handleAddTask = useCallback(async (e) => {
@@ -172,6 +257,30 @@ export default function Home() {
 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Your Tasks</h2>
+          <div className="flex gap-2">
+            <select
+              className="border p-2 rounded"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select
+              className="border p-2 rounded"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="all">All Categories</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.name.toLowerCase()}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={handleGetSuggestions}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-green-400 transition-colors"
@@ -188,7 +297,10 @@ export default function Home() {
         ) : (
           <ul className="space-y-3">
             {tasks.length === 0 && <li className="bg-white p-4 rounded-lg shadow-md text-center">No tasks found. Add one above!</li>}
-            {tasks.map(task => {
+            {tasks
+              .filter(task => filterStatus === 'all' || task.status === filterStatus)
+              .filter(task => filterCategory === 'all' || (task.category && task.category.name.toLowerCase() === filterCategory))
+              .map(task => {
               const suggestion = aiSuggestions[task.title] || {};
               return (
                 <li key={task.id} className="bg-white p-4 rounded-lg shadow-md">
@@ -217,7 +329,8 @@ export default function Home() {
           </ul>
         )}
       </div>
-      {editingTask && <EditTaskModal task={editingTask} onClose={() => setEditingTask(null)} onSave={handleUpdateTask} />}
+      {editingTask && <EditTaskModal task={editingTask} onClose={() => setEditingTask(null)} onSave={handleUpdateTask} aiSuggestions={aiSuggestions} categories={categories} />}
     </div>
   )
 }
+
